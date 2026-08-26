@@ -1,9 +1,9 @@
-# Домашнє завдання до теми «Apache Kafka»
+# Apache Kafka homework: create the topics used by the sensor pipeline.
 
 from kafka.admin import KafkaAdminClient, NewTopic
 from configs import kafka_config
 
-# Створення клієнта Kafka
+# Create an authenticated administrative client for topic management.
 admin_client = KafkaAdminClient(
     bootstrap_servers=kafka_config['bootstrap_servers'],
     security_protocol=kafka_config['security_protocol'],
@@ -12,11 +12,7 @@ admin_client = KafkaAdminClient(
     sasl_plain_password=kafka_config['password']
 )
 
-# 1. Створення топіків в Kafka:
-# Створіть три топіки в Kafka:
-# _building_sensors — для зберігання даних з усіх датчиків,
-# _temperature_alerts — для зберігання сповіщень про перевищення допустимого рівня температури,
-# _humidity_alerts — для зберігання сповіщень про вихід рівня вологості за допустимі рамки.
+# Define one input topic and two alert topics.
 my_name = "oksana"
 general_topic_name = f'{my_name}_building_sensors'
 temperature_topic_name = f'{my_name}_temperature_alerts'
@@ -24,11 +20,12 @@ humidity_topic_name = f'{my_name}_humidity_alerts'
 num_partitions = 2
 replication_factor = 1
 
+# Build the topic specifications before submitting them to Kafka.
 general_topic = NewTopic(name=general_topic_name, num_partitions=num_partitions, replication_factor=replication_factor)
 temperature_topic = NewTopic(name=temperature_topic_name, num_partitions=num_partitions, replication_factor=replication_factor)
 humidity_topic = NewTopic(name=humidity_topic_name, num_partitions=num_partitions, replication_factor=replication_factor)
 
-# Створення нового топіку
+# Create each topic independently so one existing topic does not block the others.
 try:
     admin_client.create_topics(new_topics=[general_topic], validate_only=False)
     print(f"Topic '{general_topic_name}' created successfully.")
@@ -45,8 +42,8 @@ try:
 except Exception as e:
     print(f"An error occurred: {e} with topic '{humidity_topic_name}'.")
 
-# Перевіряємо список існуючих топіків
+# Print the final topic list as a simple setup verification.
 print(admin_client.list_topics())
 
-# Закриття зв'язку з клієнтом
+# Release the administrative connection explicitly.
 admin_client.close()
