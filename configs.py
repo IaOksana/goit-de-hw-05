@@ -1,6 +1,7 @@
 import os
 
 
+# Fail early with a clear message when a required Kafka setting is absent.
 def _required_env(name: str) -> str:
     value = os.getenv(name)
     if not value:
@@ -11,6 +12,7 @@ def _required_env(name: str) -> str:
     return value
 
 
+# Keep credentials outside source control while retaining safe protocol defaults.
 kafka_config = {
     "bootstrap_servers": [_required_env("KAFKA_BOOTSTRAP_SERVERS")],
     "username": _required_env("KAFKA_USERNAME"),
