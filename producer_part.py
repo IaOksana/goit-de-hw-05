@@ -1,10 +1,6 @@
-# 2. Відправка даних до топіків:
-# Напишіть Python-скрипт, який імітує роботу датчика і періодично відправляє випадково згенеровані дані (температура та вологість) у топік building_sensors.
-# Дані мають містити ідентифікатор датчика, час отримання даних та відповідні показники.
-# Один запуск скрипту має відповідати тільки одному датчику. Тобто, для того, щоб імітувати декілька датчиків, необхідно запустити скрипт декілька разів.
-# ID датчика може просто бути випадковим числом, але постійним (однаковим) для одного запуску скрипту. При повторному запуску ID датчика може змінюватись.
-# Температура — це випадкова величина від 25 до 45.
-# Вологість — це випадкова величина від 15 до 85.
+# Simulate one building sensor and publish its readings to Kafka.
+# Run this script multiple times to emulate multiple sensors; each process keeps
+# one stable sensor ID for its entire lifetime.
 
 from kafka import KafkaProducer
 from configs import kafka_config
@@ -14,7 +10,7 @@ import time
 import random
 import os
 
-# Створення Kafka Producer
+# Serialize message keys and values as UTF-8 JSON.
 producer = KafkaProducer(
     bootstrap_servers=kafka_config['bootstrap_servers'],
     security_protocol=kafka_config['security_protocol'],
@@ -25,25 +21,26 @@ producer = KafkaProducer(
     key_serializer=lambda v: json.dumps(v).encode('utf-8')
 )
 
-# Назва топіку
+# Keep the topic naming convention consistent with the admin and consumer scripts.
 my_name = "oksana"
 topic_name = f'{my_name}_building_sensors'
-# Фіксований ID сенсора на один запуск
+
+# Reuse an explicit ID when supplied; otherwise generate one ID for this process.
 SENSOR_ID = os.getenv("SENSOR_ID") or str(random.randint(100000, 999999))
 
 
 for i in range(130):
-    # Відправлення повідомлення в топік
+    # Generate one reading and wait until Kafka acknowledges all buffered records.
     try:
         data = {
-            "timestamp": time.time(),  # Часова мітка
+            "timestamp": time.time(),  # Unix timestamp of the simulated reading.
             "temperature": random.randint(25, 45),
             "humidity": random.randint(15, 85)
         }
         producer.send(topic_name, key=SENSOR_ID, value=data)
-        producer.flush()  # Очікування, поки всі повідомлення будуть відправлені
+        producer.flush()  # Make delivery errors visible during the simulation.
         print(f"Message {i} sent {SENSOR_ID} to topic {topic_name} data {data} successfully")
     except Exception as e:
         print(f"An error occurred: {e}")
 
-producer.close()  # Закриття producer
+producer.close()  # Release network resources after the simulation.
